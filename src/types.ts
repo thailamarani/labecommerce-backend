@@ -1,4 +1,4 @@
-export type acessUsers = {
+export type TAcessUsers = {
     id: string,
     name?: string,
     email: string,
@@ -6,7 +6,7 @@ export type acessUsers = {
     createdAt?: string 
 };
 
-export type createUsers = {
+export type TCreateUsers = {
     id: string,
     email: string,
     password: string
@@ -18,14 +18,14 @@ export enum Category {
     ACCESSORIES = "Acessórios"
 }
 
-export type products = {
+export type TProducts = {
     id: string,
     name: string,
     price: number,
     category: Category
 };
 
-export type purchases = {
+export type TPurchases = {
     userId: string,
     productId: string,
     quantity: number,

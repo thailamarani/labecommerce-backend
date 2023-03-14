@@ -4,14 +4,14 @@ exports.getAllPurchasesFromUserId = exports.createPurchase = exports.purchase = 
 const types_1 = require("./types");
 exports.acessUser = [
     {
-        id: "003",
+        id: "u001",
         name: "Marcia",
         email: "marcia@email.com",
         password: "marcia123",
         createdAt: "2023-04-03 09:12:42"
     },
     {
-        id: "004",
+        id: "u002",
         name: "Claudio",
         email: "claudio@email.com",
         password: "claudio123",
@@ -23,7 +23,7 @@ function createUser(id, email, password) {
     exports.acessUser.push(newUser);
     console.log("Cadastro realizado com sucesso!");
 }
-createUser("005", "user5@email.com", "senha123");
+createUser("u003", "user5@email.com", "senha123");
 function getAllUsers() {
     console.log(exports.acessUser);
 }
@@ -31,13 +31,13 @@ exports.getAllUsers = getAllUsers;
 getAllUsers();
 exports.product = [
     {
-        id: "p010",
+        id: "p001",
         name: "Chinelo",
         price: 10,
         category: types_1.Category.SHOES
     },
     {
-        id: "p020",
+        id: "p002",
         name: "Vestido",
         price: 5,
         category: types_1.Category.CLOTHES
@@ -67,13 +67,13 @@ function queryProductsByName(q) {
 exports.queryProductsByName = queryProductsByName;
 exports.purchase = [
     {
-        userId: "001",
+        userId: "u001",
         productId: "Chinelo",
         quantity: 2,
         totalPrice: 20
     },
     {
-        userId: "002",
+        userId: "u002",
         productId: "Vestido",
         quantity: 1,
         totalPrice: 5
