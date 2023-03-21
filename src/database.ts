@@ -23,7 +23,7 @@ function createUser (id: string, email: string, password: string){
     console.log("Cadastro realizado com sucesso!")
 }
 
-createUser("u003", "user5@email.com", "senha123")
+createUser("u003", "user003@email.com", "senha003")
 
 export function getAllUsers (){
     console.log(acessUser)
@@ -71,13 +71,13 @@ export function queryProductsByName (q: string) : TProducts[]{
 export const purchase: TPurchases [] = [
     {
         userId: "u001",
-        productId: "Chinelo",
+        productId: "p001",
         quantity: 2,
         totalPrice: 20
     },
     {
         userId: "u002",
-        productId: "Vestido",
+        productId: "p002",
         quantity: 1,
         totalPrice: 5
     }

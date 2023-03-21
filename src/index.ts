@@ -1,5 +1,5 @@
 import { acessUser, createProduct, createPurchase, getAllProducts, getAllPurchasesFromUserId, getAllUsers, getProductById, product, purchase, queryProductsByName } from "./database";
-import { Category, TCreateUsers, TProducts, TPurchases } from "./types";
+import { Category, TAcessUsers, TCreateUsers, TProducts, TPurchases } from "./types";
 import express, { Request, Response } from 'express'
 import cors from 'cors'
 
@@ -105,4 +105,72 @@ app.post('/purchases', (req: Request, res: Response) => {
     res
     .status(201)
     .send("Compra realizada com sucesso!")
+})
+
+//getProductById
+app.get("/products/:id", (req: Request, res: Response) => {
+    const id = req.params.id
+    const result: TProducts = product.find(prod => prod.id === id)
+    res.status(200).send(result)
+})
+
+//getUserPurchasesByUserId
+app.get("/users/:id/purchases", (req: Request, res: Response) => {
+    const id = req.params.id
+    const result: TPurchases = purchase.find(card => card.userId === id)
+    res.status(200).send(result)
+})
+
+//deleteUserById
+app.delete("/users/:id", (req: Request, res: Response) => {
+    const id = req.params.id
+    const index = acessUser.findIndex((item) => item.id === id)
+    console.log(index)
+    res.status(200).send("User apagado com sucesso!")
+})
+
+//deleteProductById
+app.delete("/products/:id", (req: Request, res: Response) => {
+    const id = req.params.id
+    const index = product.findIndex((prod) => prod.id === id)
+    console.log(index)
+    res.status(200).send("Produto apagado com sucesso!")
+})
+
+//editUserById
+app.put("/users/:id", (req: Request, res: Response) => {
+    const id = req.params.index
+
+    const newEmail = req.body.email as string | undefined
+    const newPassword = req.body.password as string | undefined
+
+    const result: TAcessUsers = acessUser.find(acessUser => acessUser.id === id)
+
+    if(result){
+        result.email = newEmail || result.email
+        result.password = newPassword || result.password
+    }
+
+    res.status(200).send("Cadastro atualizado com sucesso!")
+
+})
+
+//editProductById
+app.put("/products/:id", (req: Request, res: Response) => {
+    const id = req.params.index
+
+    const newName = req.body.name as string | undefined
+    const newPrice = req.body.price as number | undefined
+    const newCategory = req.body.category as Category | undefined
+
+    const result: TProducts = product.find(product => product.id === id)
+
+    if(result){
+        result.name = newName || result.name
+        result.price = newPrice || result.price
+        result.category = newCategory || result.category
+    }
+
+    res.status(200).send("Produto atualizado com sucesso!")
+
 })
