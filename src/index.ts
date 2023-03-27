@@ -32,40 +32,115 @@ app.get('/ping', (req: Request, res: Response) => {
 
 //getAllUsers
 app.get('/users', (req: Request, res: Response) => {
+    try{
+       res.status(200).send(acessUser) 
+    } catch(error) {
+        console.log(error)
+        if(res.statusCode === 200) {
+            res.status(500)
+        }
+        res.send(error.message)
+    }
     res.status(200).send(acessUser)
 })
 
 //getAllProducts
 app.get('/products', (req: Request, res: Response) => {
-    res.status(200).send(product)
+    try{
+        res.status(200).send(acessUser)
+    } catch(error) {
+        console.log(error)
+        if(res.statusCode === 200) {
+            res.status(500)
+        }
+        res.send(error.message)
+    }
 })
 
 //searchProductByName
 app.get('/products/search', (req: Request, res: Response) => {
-    const q = req.query.q as string
-
-    const result = product.filter(product => product.name.toLowerCase().includes(q.toLowerCase()))
-
-    res.status(200).send(result)
+    try{
+        const q = req.query.q as string
+        if(q.length <1) {
+            res.status(400)
+            throw new Error("'Query params' deve possuir pelo menos um caractere.")
+        }
+        const result = product.filter(product => product.name.toLowerCase().includes(q.toLowerCase()))
+        res.status(200).send(result)
+    } catch(error) {
+        console.log(error)
+        if(res.statusCode === 200) {
+            res.status(500)
+        }
+        res.send(error.message)
+    }
 })
 
 //createUser
 app.post('/users', (req: Request, res: Response) => {
-    const id = req.body.id as string
-    const email = req.body.email as string
-    const password = req.body.password as string
+    try{
+        const id = req.body.id as string
+        const email = req.body.email as string
+        const password = req.body.password as string
 
-    const newUser: TCreateUsers = {
-        id,
-        email,
-        password
-    }
+        if(!id){
+            res.status(400)
+            throw new Error("'id deve ser passado no body")
+        }
+        if(typeof id !== "string"){
+            res.status(400)
+            throw new Error("'id' deve ser do tipo 'string'")
+        }
+        if(!email){
+            res.status(400)
+            throw new Error("'email' deve ser passado no body")
+        }
+        if(typeof email !== "string"){
+            res.status(400)
+            throw new Error("'email' deve ser do tipo 'string'")
+        }
+        if(!password){
+            res.status(400)
+            throw new Error("'password' deve ser passado no body")
+        }
+        if(typeof password !== "string"){
+            res.status(400);
+            throw new Error("'password' deve ser do tipo 'string'")
+        }
+        
+        const searchId = acessUser.find((user) => user.id === id)
 
-    acessUser.push(newUser)
-    res
-    .status(201)
-    .send("Cadastro realizado com sucesso!")
+        if(searchId){
+            res.status(400)
+            throw new Error("Já existe uma conta com esse id")
+        }
+        
+        const searchEmail = acessUser.find((user) => user.email === email)
+        
+        if(searchEmail){
+            res.status(400)
+            throw new Error("Já existe uma conta com esse email")
+        }
+    
+        const newUser: TCreateUsers = {
+            id,
+            email,
+            password
+        }
+
+        acessUser.push(newUser);
+        res.status(201).send("Usuário cadastrado com sucesso!")
+
+    } catch(error)
+    console.log(error)
+    
+    if(res.statusCode === 200){
+        res.status(500)
+      }
+      res.send(error.message)    
 })
+
+
 
 //createProduct
 app.post('/products', (req: Request, res: Response) => {
