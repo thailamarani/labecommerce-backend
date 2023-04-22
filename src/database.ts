@@ -23,7 +23,7 @@ function createUser (id: string, email: string, password: string){
     console.log("Cadastro realizado com sucesso!")
 }
 
-createUser("u003", "user003@email.com", "senha003")
+// createUser("u003", "user003@email.com", "senha003")
 
 export function getAllUsers (){
     console.log(acessUser)
@@ -35,13 +35,13 @@ export const product: TProducts [] = [
     {
         id: "p001",
         name: "Chinelo",
-        price: 10,
+        price: 40,
         category: Category.SHOES
     },
     {
         id: "p002",
         name: "Vestido",
-        price: 5,
+        price: 60,
         category: Category.CLOTHES
     }
 ];

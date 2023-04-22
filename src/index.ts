@@ -2,56 +2,72 @@ import { acessUser, createProduct, createPurchase, getAllProducts, getAllPurchas
 import { Category, TAcessUsers, TCreateUsers, TProducts, TPurchases } from "./types";
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import { knex } from "knex";
+import { db } from "./database/knex";
 
-const app = express()
+const app = express();
 
-app.use(express.json())
-app.use(cors())
+app.use(express.json());
+app.use(cors());
 
 app.listen(3003, () => {
     console.log("Servidor rodando na porta 3003")
-})
+});
 
 app.get('/ping', (req: Request, res: Response) => {
     res.send('Pong!')
-})
+});
 
 //getAllUsers
-app.get('/users', (req: Request, res: Response) => {
+app.get('/users', async (req: Request, res: Response) => {
     try{
-       res.status(200).send(acessUser) 
-    } catch(error) {
+        const result = await db.raw(`
+        SELECT * FROM users;
+        `)
+        res.status(200).send({Usuários: result})
+    } catch(error){
         console.log(error)
-        if(res.statusCode === 200) {
+        if(res.statusCode === 200){
             res.status(500)
         }
         res.send(error.message)
     }
-    res.status(200).send(acessUser)
-})
+});
 
 //getAllProducts
-app.get('/products', (req: Request, res: Response) => {
+app.get('/products', async (req: Request, res: Response) => {
     try{
-        res.status(200).send(acessUser)
-    } catch(error) {
+        const result = await db.raw(`
+        SELECT * FROM products;
+        `)
+        res.status(200).send({Produtos: result})
+    } catch(error){
         console.log(error)
-        if(res.statusCode === 200) {
+        if(res.statusCode === 200){
             res.status(500)
         }
         res.send(error.message)
     }
-})
+});
 
 //searchProductByName
-app.get('/products/search', (req: Request, res: Response) => {
+app.get('/products/search', async (req: Request, res: Response) => {
     try{
         const q = req.query.q as string
-        if(q.length <1) {
-            res.status(400)
-            throw new Error("'Query params' deve possuir pelo menos um caractere.")
+        if(q !== undefined){
+            if(q.length <1) {
+                res.status(404)
+                throw new Error("'Query params' deve possuir pelo menos um caractere.")
+            }
         }
-        const result = product.filter(product => product.name.toLowerCase().includes(q.toLowerCase()))
+        if (typeof q !== "string") {
+            throw new Error("'Query params' deve ser do tipo 'string'.")
+        }
+        const result = await db.raw(`
+            SELECT * FROM products AS searchProductsByName
+            WHERE name LIKE "%${q}%";
+        `)
+        // product.filter(product => product.name.toLowerCase().includes(q.toLowerCase()))
         res.status(200).send(result)
     } catch(error) {
         console.log(error)
@@ -60,48 +76,48 @@ app.get('/products/search', (req: Request, res: Response) => {
         }
         res.send(error.message)
     }
-})
+});
 
 //createUser
-app.post('/users', (req: Request, res: Response) => {
+app.post('/users', async (req: Request, res: Response) => {
     try{
         const { id, email, password }: TAcessUsers = req.body
 
         if(!id){
             res.status(400)
-            throw new Error("'id deve ser passado no body")
+            throw new Error("'ID' deve ser passado no body.")
         }
         if(typeof id !== "string"){
             res.status(400)
-            throw new Error("'id' deve ser do tipo 'string'")
+            throw new Error("'ID' deve ser do tipo 'string'.")
         }
         if(!email){
             res.status(400)
-            throw new Error("'email' deve ser passado no body")
+            throw new Error("'Email' deve ser passado no body.")
         }
         if(typeof email !== "string"){
             res.status(400)
-            throw new Error("'email' deve ser do tipo 'string'")
+            throw new Error("'Email' deve ser do tipo 'string'.")
         }
         if(!password){
             res.status(400)
-            throw new Error("'password' deve ser passado no body")
+            throw new Error("'Password' deve ser passado no body.")
         }
         if(typeof password !== "string"){
             res.status(400);
-            throw new Error("'password' deve ser do tipo 'string'")
+            throw new Error("'Password' deve ser do tipo 'string'.")
         }
         
         const searchId = acessUser.find((user) => user.id === id)
         if(searchId){
             res.status(400)
-            throw new Error("Já existe uma conta com esse id")
+            throw new Error("Já existe uma conta com esse ID.")
         }
         
         const searchEmail = acessUser.find((user) => user.email === email)
         if(searchEmail){
             res.status(400)
-            throw new Error("Já existe uma conta com esse email")
+            throw new Error("Já existe uma conta com esse email.")
         }
     
         const newUser: TAcessUsers = {
@@ -109,6 +125,16 @@ app.post('/users', (req: Request, res: Response) => {
             email,
             password
         }
+
+        await db.raw(`
+        INSERT INTO users (id, email, password)
+        VALUES ("${id}", "${email}", "${password}");
+        `)
+        await db.raw(`
+        UPDATE users
+        SET created_at = DATE('now')
+        WHERE id = "${id}";
+        `)
 
         acessUser.push(newUser);
         res.status(201).send("Usuário cadastrado com sucesso!")
@@ -120,139 +146,141 @@ app.post('/users', (req: Request, res: Response) => {
       }
       res.send(error.message) 
     }   
-})
+});
 
 //createProduct
-app.post('/products', (req: Request, res: Response) => {
+app.post('/products', async (req: Request, res: Response) => {
     try{
-        const id = req.body.id as string
-        const name = req.body.name as string
-        const price = req.body.price as number
-        const category = req.body.category as Category
+        const {id, name, price, category} = req.body
 
         if(!id){
             res.status(400)
-            throw new Error("'id' deve ser passado no body")
+            throw new Error("'ID' deve ser passado no body.")
         }
-      
         if(!name){
             res.status(400)
-            throw new Error("'name' deve ser passado no body")
+            throw new Error("'Name' deve ser passado no body")
         }
-      
         if(!price){
             res.status(400)
-            throw new Error("'price' deve ser passado no body")
+            throw new Error("'Price' deve ser passado no body.")
         }
-      
         if(!category){
             res.status(400)
-            throw new Error("'category' deve ser passado no body")
+            throw new Error("'Category' deve ser passado no body.")
         }
-      
         if(id !== undefined){
             if (typeof id !== "string"){
                 res.status(400)
-                throw new Error("'id' deve ser do tipo 'string'")
+                throw new Error("'ID' deve ser do tipo 'string'.")
             }
         }
-      
         if(name !== undefined){
             if(typeof name !== "string"){
                 res.status(400)
-                throw new Error("'name' deve ser do tipo 'string'")
+                throw new Error("'Name' deve ser do tipo 'string'.")
             }
         }
-      
         if(price !== undefined){
             if (typeof price !== "number") {
                 res.status(400)
-                throw new Error("'price' deve ser do tipo 'number'")
+                throw new Error("'Price' deve ser do tipo 'number'.")
             }
-          }
-
+        }
         if(category !== undefined){
-            if(
-                category !== Category.ACCESSORIES &&
+            if(category !== Category.ACCESSORIES &&
                 category !== Category.CLOTHES &&
                 category !== Category.SHOES
             )
 
-    {res.status(400)
-        throw new Error(
-        "'Category' deve ter um tipo válido: 'Acessórios', 'Roupas' ou 'Calçados'"
-        )
-    }
+        await db.raw(`
+        INSERT INTO products (id, name, price, category)
+        VALUES ("${id})", "${name}", "${price}", ${category}")
+        `);
+
+        res.status(200).send("Produto cadastrado com sucesso!")
+
+        {res.status(400)
+            throw new Error("'Category' deve ter um tipo válido: 'Acessórios', 'Roupas' ou 'Calçados'.")
+        }
     }
   
     const searchId = product.find((product) => product.id === id)
         if(searchId){
         res.status(400)
-        throw new Error("Já existe um produto cadastrado com esse 'id'")
+        throw new Error("Já existe um produto cadastrado com esse 'id'.")
     }
 
     const newProduct: TProducts = { id, name, price, category }
         product.push(newProduct);
         res.status(201).send("Produto cadastrado com sucesso!");
-        } catch (error) {
+    
+    } catch (error) {
         console.log(error);
         if (res.statusCode === 200) {
         res.status(500);
     }
     res.send(error.message);
     }
-})    
+});
 
 //createPurchase
-app.post("/purchases", (req: Request, res: Response) => {
+app.post("/purchases", async (req: Request, res: Response) => {
     try{
       const{userId, productId, quantity, totalPrice}: TPurchases = req.body
   
     if(!userId){
         res.status(400)
-        throw new Error("'userId' deve ser passado no body")
+        throw new Error("'UserId' deve ser passado no body.")
     }
     if(!productId){
         res.status(400)
-        throw new Error("'productId' deve ser passado no body")
+        throw new Error("'ProductId' deve ser passado no body.")
     }
     if(!quantity){
         res.status(400)
-        throw new Error("'quantity' deve ser passado no body")
+        throw new Error("'Quantity' deve ser passado no body.")
     }
     if(!totalPrice){
         res.status(400)
-        throw new Error("'totalPrice' deve ser passado no body")
+        throw new Error("'TotalPrice' deve ser passado no body.")
     }
     if(userId !== undefined){
         if (typeof userId !== "string"){
           res.status(400)
-          throw new Error("'userId' deve ser do tipo 'string'")
+          throw new Error("'UserId' deve ser do tipo 'string'.")
         }
     }
     if(productId !== undefined){
         if (typeof productId !== "string"){
           res.status(400)
-          throw new Error("'productId' deve ser do tipo 'string'")
+          throw new Error("'ProductId' deve ser do tipo 'string'.")
         }
     }
     if(quantity !== undefined){
         if (typeof quantity !== "number"){
           res.status(400)
-          throw new Error("'quantity' deve ser do tipo 'number'")
+          throw new Error("'Quantity' deve ser do tipo 'number'.")
         }
     }
       if(totalPrice !== undefined){
         if(typeof totalPrice !== "number"){
           res.status(400)
-          throw new Error("'totalPrice' deve ser do tipo 'number'")
+          throw new Error("'TotalPrice' deve ser do tipo 'number'.")
         }
     }
+
+    await db.raw(`
+        INSERT INTO products (userId, productId, quantity, totalPrice)
+        VALUES ("${userId}", "${productId}", "${quantity}", "${totalPrice}");
+        `)
+        res.status(200).send(`Pedido cadastrado com sucesso!`)
+
     const searchUserId = acessUser.find((user) => user.id === userId)
     if(!searchUserId){
         res.status(404)
         throw new Error(
-          "'userId' deve corresponder à 'id' de um usuário cadastrado"
+          "'UserId' deve corresponder a 'ID' de um usuário cadastrado."
         )
     }
     const searchProductId = product.find(
@@ -261,14 +289,14 @@ app.post("/purchases", (req: Request, res: Response) => {
     if(!searchProductId){
         res.status(400)
         throw new Error(
-          "'productId' deve corresponder à 'id' de um produto cadastrado"
+          "'ProductId' deve corresponder à 'id' de um produto cadastrado."
         )
     }
     if(searchProductId){
         if(searchProductId.price * quantity !== totalPrice){
           res.status(400)
           throw new Error(
-            "O valor total da compra não corresponde ao valor do produto vezes a quantidade informada"
+            "O valor total da compra não corresponde ao valor do produto vezes a quantidade informada."
           );
         }
     }
@@ -282,16 +310,19 @@ app.post("/purchases", (req: Request, res: Response) => {
       }
       res.send(error.message);
     }
-  })
+});
 
 //getProductById
-app.get("/products/:id", (req: Request, res: Response) => {
+app.get("/products/:id", async (req: Request, res: Response) => {
     try{
         const id = req.params.id
-        const result: TProducts = product.find(prod => prod.id === id)
+        const result = await db.raw(`
+        SELECT * FROM products
+        WHERE id = "${id}"
+        `)
         if(!result){
             res.status(404)
-            throw new Error("Produto não existente. Verifique o 'id'")
+            throw new Error("Produto não existente. Verifique o 'ID'.")
         }
         res.status(200).send(result)
     } catch(error){
@@ -301,23 +332,27 @@ app.get("/products/:id", (req: Request, res: Response) => {
         }
         res.send(error.message)
     }
-})
+});
 
 //getUserPurchasesByUserId
-app.get("/users/:id/purchases", (req: Request, res: Response) => {
+app.get("/users/:id/purchases", async (req: Request, res: Response) => {
     try{
         const id = req.params.id
-        const searchUserId = acessUser.find((user) => user.id === id)
-        if(!searchUserId) {
+        const result = await db.raw(`
+        SELECT * FROM purchases
+        WHERE buyerd_id = "${id}"
+        `)
+        if(!result){
             res.status(404)
-            throw new Error("Usuário não existente. Verifique o 'id'")
-    }
+            throw new Error("Compra não encontrada!")
+        }
 
-    const userPurchases = purchase.filter(
-      (purchase) => purchase.userId === id
-    )
+    // const userPurchases = purchase.filter(
+    //   (purchase) => purchase.userId === id
+    // )
 
-    res.status(200).send(userPurchases)
+    res.status(200).send(result)
+    
     } catch (error){
         console.log(error)
         if (res.statusCode === 200){
@@ -325,7 +360,8 @@ app.get("/users/:id/purchases", (req: Request, res: Response) => {
         }
         res.send(error.message)
       }
-})
+});
+
 
 //deleteUserById
 app.delete("/users/:id", (req: Request, res: Response) => {
@@ -334,7 +370,7 @@ app.delete("/users/:id", (req: Request, res: Response) => {
         const searchUserId = acessUser.find((user) => user.id === id)
         if(!searchUserId){
         res.status(404)
-        throw new Error("Usuário não existente. Verifique o 'id'")
+        throw new Error("Usuário não existente. Verifique o 'ID'.")
         }
         const index = acessUser.findIndex((user) => user.id === id)
         if(index){
@@ -348,7 +384,7 @@ app.delete("/users/:id", (req: Request, res: Response) => {
     }
         res.send(error.message)
     }
-  })
+});
 
 //deleteProductById
 app.delete("/products/:id", (req: Request, res: Response) => {
@@ -357,13 +393,13 @@ app.delete("/products/:id", (req: Request, res: Response) => {
         const searchProduct = product.find(product => product.id === id)
         if(!searchProduct){
             res.status(404)
-            throw new Error("Produto não existe. Verifique o 'id'")
+            throw new Error("Produto não existe. Verifique o 'ID'.")
     }
         const index = product.findIndex((product) => product.id === id)
         if (index){
         product.splice(index, 1)
     }
-        res.status(200).send("Produto apagado com sucesso")
+        res.status(200).send("Produto apagado com sucesso!")
     } catch (error){
       console.log(error)
       if (res.statusCode === 200) {
@@ -371,7 +407,7 @@ app.delete("/products/:id", (req: Request, res: Response) => {
       }
       res.send(error.message)
     }
-})
+});
 
 //editUserById
 app.put("/users/:id", (req: Request, res: Response) => {
@@ -384,18 +420,18 @@ app.put("/users/:id", (req: Request, res: Response) => {
    
     if(!searchUserId){
         res.status(404)
-        throw new Error("Usuário não existe. Verifique o 'id'")
+        throw new Error("Usuário não existe. Verifique o 'ID'.")
     }
     if(newEmail !== undefined){
         if(typeof newEmail !== "string"){
             res.status(400)
-            throw new Error("'email' deve ser do tipo 'string'")
+            throw new Error("'Email' deve ser do tipo 'string'.")
         }
     }
     if(newPassword !== undefined){
          if(typeof newPassword !== "string"){
            res.status(400)
-           throw new Error("'password' deve ser do tipo 'string'")
+           throw new Error("'Password' deve ser do tipo 'string'.")
         }
     }
 
@@ -404,7 +440,7 @@ app.put("/users/:id", (req: Request, res: Response) => {
        result.email = newEmail || result.email
        result.password = newPassword || result.password
     }
-    res.status(200).send("Cadastro atualizado com sucesso")
+    res.status(200).send("Cadastro atualizado com sucesso!")
 
     } catch(error){
     console.log(error)
@@ -413,7 +449,7 @@ app.put("/users/:id", (req: Request, res: Response) => {
     }
         res.send(error.message);
     }
-})
+});
 
 //editProductById
 app.put("/products/:id", (req: Request, res: Response) => {
@@ -427,19 +463,19 @@ app.put("/products/:id", (req: Request, res: Response) => {
     
         if(!searchProduct){
         res.status(404)
-        throw new Error("Produto não encontrado. Verifique o 'id'")
+        throw new Error("Produto não encontrado. Verifique o 'ID'.")
         }
      
         if(newName !== undefined){
         if(typeof newName !== "string"){
             res.status(400)
-            throw new Error("'name' deve ser do tipo 'string'")
+            throw new Error("'Name' deve ser do tipo 'string'.")
         }
         }
         if(newPrice !== undefined){
         if(typeof newPrice !== "number"){
             res.status(400)
-            throw new Error("'price' deve ser do tipo 'number'")
+            throw new Error("'Price' deve ser do tipo 'number'.")
         }
         }
         if(newCategory !== undefined){
@@ -450,7 +486,7 @@ app.put("/products/:id", (req: Request, res: Response) => {
         ){
             res.status(400)
             throw new Error(
-            "'category' deve ter um tipo válido: 'Roupas', 'Calçados', 'Acessórios'"
+            "'Category' deve ter um tipo válido: 'Roupas', 'Calçados', 'Acessórios'."
         )
         }
         }
@@ -460,7 +496,7 @@ app.put("/products/:id", (req: Request, res: Response) => {
             result.price = newPrice || result.price
             result.category = newCategory || result.category
         }
-        res.status(200).send("Produto atualizado com sucesso")
+        res.status(200).send("Produto atualizado com sucesso!")
 
     } catch(error){
         console.log(error)
@@ -469,4 +505,4 @@ app.put("/products/:id", (req: Request, res: Response) => {
         }
         res.send(error.message)
         }
-})
+});

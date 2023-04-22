@@ -9,7 +9,7 @@ export const db = knex({
     pool: {
         min: 0,
         max: 1,
-				afterCreate: (conn: any, cb: any) => {
+			afterCreate: (conn: any, cb: any) => {
             conn.run("PRAGMA foreign_keys = ON", cb)
         }
     }
