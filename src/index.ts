@@ -21,9 +21,7 @@ app.get('/ping', (req: Request, res: Response) => {
 //getAllUsers
 app.get('/users', async (req: Request, res: Response) => {
     try{
-        const result = await db.raw(`
-        SELECT * FROM users;
-        `)
+        const result: TAcessUsers = await db("users")
         res.status(200).send({Usuários: result})
     } catch(error){
         console.log(error)
@@ -37,9 +35,7 @@ app.get('/users', async (req: Request, res: Response) => {
 //getAllProducts
 app.get('/products', async (req: Request, res: Response) => {
     try{
-        const result = await db.raw(`
-        SELECT * FROM products;
-        `)
+        const result: TProducts[] = await db.select("*").from("products")
         res.status(200).send({Produtos: result})
     } catch(error){
         console.log(error)
@@ -63,10 +59,7 @@ app.get('/products/search', async (req: Request, res: Response) => {
         if (typeof q !== "string") {
             throw new Error("'Query params' deve ser do tipo 'string'.")
         }
-        const result = await db.raw(`
-            SELECT * FROM products AS searchProductsByName
-            WHERE name LIKE "%${q}%";
-        `)
+        const result = await db("products").select("*").where("name", "LIKE", `%${q}%`)
         // product.filter(product => product.name.toLowerCase().includes(q.toLowerCase()))
         res.status(200).send(result)
     } catch(error) {
@@ -126,15 +119,11 @@ app.post('/users', async (req: Request, res: Response) => {
             password
         }
 
-        await db.raw(`
-        INSERT INTO users (id, email, password)
-        VALUES ("${id}", "${email}", "${password}");
-        `)
-        await db.raw(`
-        UPDATE users
-        SET created_at = DATE('now')
-        WHERE id = "${id}";
-        `)
+        await db.insert({
+            id: id,
+            email: email,
+            password: password
+        }).into("users")
 
         acessUser.push(newUser);
         res.status(201).send("Usuário cadastrado com sucesso!")
@@ -193,10 +182,12 @@ app.post('/products', async (req: Request, res: Response) => {
                 category !== Category.SHOES
             )
 
-        await db.raw(`
-        INSERT INTO products (id, name, price, category)
-        VALUES ("${id})", "${name}", "${price}", ${category}")
-        `);
+        await db.insert({
+            id: id, 
+            name: name,
+            price: price,
+            category: category
+        }).into("products")
 
         res.status(200).send("Produto cadastrado com sucesso!")
 
@@ -270,10 +261,12 @@ app.post("/purchases", async (req: Request, res: Response) => {
         }
     }
 
-    await db.raw(`
-        INSERT INTO products (userId, productId, quantity, totalPrice)
-        VALUES ("${userId}", "${productId}", "${quantity}", "${totalPrice}");
-        `)
+    await db.insert({
+        userId: userId,
+        productId: productId,
+        quantity: quantity,
+        totalPrice: totalPrice
+    }).into("purchases")
         res.status(200).send(`Pedido cadastrado com sucesso!`)
 
     const searchUserId = acessUser.find((user) => user.id === userId)
@@ -316,10 +309,8 @@ app.post("/purchases", async (req: Request, res: Response) => {
 app.get("/products/:id", async (req: Request, res: Response) => {
     try{
         const id = req.params.id
-        const result = await db.raw(`
-        SELECT * FROM products
-        WHERE id = "${id}"
-        `)
+        const result = await db.select("*").from("products").where("id")
+        
         if(!result){
             res.status(404)
             throw new Error("Produto não existente. Verifique o 'ID'.")
@@ -338,10 +329,8 @@ app.get("/products/:id", async (req: Request, res: Response) => {
 app.get("/users/:id/purchases", async (req: Request, res: Response) => {
     try{
         const id = req.params.id
-        const result = await db.raw(`
-        SELECT * FROM purchases
-        WHERE buyerd_id = "${id}"
-        `)
+        const result = await db.select("*").from("purchases").where("id")
+        
         if(!result){
             res.status(404)
             throw new Error("Compra não encontrada!")
@@ -506,3 +495,4 @@ app.put("/products/:id", (req: Request, res: Response) => {
         res.send(error.message)
         }
 });
+
