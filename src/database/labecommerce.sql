@@ -1,29 +1,43 @@
--- Active: 1679959762989@@127.0.0.1@1433
+-- Active: 1688670879500@@127.0.0.1@3306
 CREATE TABLE users(
     id TEXT PRIMARY KEY UNIQUE NOT NULL,
+    name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT(DATETIME('now', 'localtime'))
 );
 
-INSERT INTO users(id, email, password)
+INSERT INTO users(id, name, email, password)
 VALUES
-("u100", "user100@email.com", "pw100"),
-("u200", "user200@email.com", "pw200"),
-("u300", "user300@email.com", "pw300");
+('u001', 'User001', 'user001@email.com', 'pw100'),
+('u002', 'User002', 'user002@email.com', 'pw200');
 
 CREATE TABLE products(
     id TEXT PRIMARY KEY UNIQUE NOT NULL,
     name TEXT NOT NULL,
-    price REAL NOT NULL,
-    category TEXT NOT NULL
+    price INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    image_url TEXT NOT NULL
 );
 
-INSERT INTO products(id, name, price, category)
-VALUES
-("p010", "Crocs", 19, "Sapatos"),
-("p020", "Moletom", 22, "Roupas"),
-("p030", "Cropped", 11, "Roupas"),
-("p040", "Colar", 7, "Acessórios"),
-("p050", "Brinco", 6, "Acessórios");
+CREATE TABLE purchases (
+    id TEXT PRIMARY KEY UNIQUE NOT NULL,
+    buyer TEXT NOT NULL,
+    total_price REAL NOT NULL,
+    created_at TEXT NOT NULL DEFAULT(DATETIME('now', 'localtime')),
+    FOREIGN KEY (buyer) REFERENCES users (id)
+);
+
+CREATE TABLE purchases_products(
+    purchase_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    FOREIGN KEY (purchase_id) REFERENCES purchases (id),
+    FOREIGN KEY (product_id) REFERENCES products (id)
+);
+
+DROP TABLE users;
 
 DROP TABLE products;
+
+DROP TABLE purchases;
