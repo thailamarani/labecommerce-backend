@@ -2,7 +2,6 @@ import express, { Request, Response } from 'express';
 import { db } from './database/knex';
 import cors from 'cors';
 import { User, UserDB, ProductDB, Product, Purchase } from './types';
-import { type } from 'os';
 
 const app = express()
 
@@ -133,7 +132,6 @@ app.post('/products', async (req: Request, res: Response) => {
         await db("products").insert(newProduct)
 
         res.status(201).send({ message: "Produto cadastrado com sucesso!" })
-
     } catch (error: any) {
         res.status(400).send(error.message)
     }
@@ -191,7 +189,6 @@ app.put('/products/:id', async (req: Request, res: Response) => {
         await db("products").update(newProduct).where({ id: idToEdit })
 
         res.status(200).send({ message: "Produto atualizado com sucesso!" })
-
     } catch (error: any) {
         res.status(400).send(error.message)
     }
@@ -260,7 +257,68 @@ app.post('/purchases', async (req: Request, res: Response) => {
         })))
 
         res.status(201).send("Pedido realizado com sucesso!")
+    } catch (error: any) {
+        res.status(400).send(error.message)
+    }
+});
 
+app.delete('/purchases/:id', async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id
+
+        const [idExists] = await db("purchases").where({ id })
+
+        if (!idExists) {
+            throw new Error("id da compra é inválido")
+        }
+
+        await db("purchases_products").del().where({ purchase_id: id })
+
+        await db("purchases").del().where({ id })
+
+        res.status(200).send("Pedido cancelado com sucesso!")
+    } catch (error: any) {
+        res.status(400).send(error.message)
+    }
+});
+
+app.get('/purchases/:id', async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id
+
+        const [idExists] = await db("purchases").where({ id })
+
+        if (!idExists) {
+            throw new Error("id da compra inválido")
+        }
+
+        const purchaseResponse = await db("purchases AS pur")
+            .select(
+                "pur.id AS purchaseId",
+                "u.id AS buyerId",
+                "u.name AS buyerName",
+                "u.email AS buyerEmail",
+                "pur.total_price AS totalPrice",
+                "pur.created_at AS createdAt"
+            )
+            .innerJoin("users AS u", "u.id", "=", "pur.buyer")
+            .where("pur.id", "=", id)
+
+        const productResponse = await db("products AS pro")
+            .select(
+                "pro.id AS id",
+                "pro.name AS name",
+                "pro.price AS price",
+                "pro.description AS description",
+                "pro.image_url AS imageUrl",
+                "pur.quantity AS quantity"
+            )
+            .innerJoin("purchases_products AS pur", "pur.product_id", "=", "pro.id")
+            .where("pur.purchase_id", "=", id)
+
+        const result = {...purchaseResponse[0], products: [...productResponse]}
+
+        res.status(200).send(result)
     } catch (error: any) {
         res.status(400).send(error.message)
     }
